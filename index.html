@@ -1,38 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Simple 3D Game</title>
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
     <div id="gameContainer">
-        <div id="ui">
-            <div>Score: <span id="score">0</span></div>
-            <div>Items Left: <span id="itemsLeft">10</span></div>
-            <div id="timer">Time: <span id="timeLeft">20</span>s</div>
+      <div id="ui">
+        <div>Score: <span id="score">0</span></div>
+        <div>Items Left: <span id="itemsLeft">10</span></div>
+        <div id="timer">Time: <span id="timeLeft">20</span>s</div>
+      </div>
+
+      <div id="instructions">
+        Use WASD or Arrow Keys to move • Collect all the spinning cubes!<br />
+        <span id="mobileInstructions">On mobile: Use the joystick to move</span>
+      </div>
+
+      <div id="mobileControls">
+        <div id="joystick">
+          <div id="joystickKnob"></div>
         </div>
-        
-        <div id="instructions">
-            Use WASD or Arrow Keys to move • Collect all the spinning cubes!<br>
-            <span id="mobileInstructions">On mobile: Use the joystick to move</span>
+      </div>
+
+      <div id="gameOver">
+        <h2 id="gameOverTitle">Congratulations!</h2>
+
+        <p id="gameOverMessage">You collected all items!</p>
+        <div id="nameInput">
+          <input type="text" id="playerName" placeholder="Your Name" />
+          <button onclick="submitScore()">Submit</button>
         </div>
-        
-        <div id="mobileControls">
-            <div id="joystick">
-                <div id="joystickKnob"></div>
-            </div>
+
+        <div id="leaderboard" style="display: none">
+          <h3>Leaderboard</h3>
+          <ol id="leaderboardList"></ol>
         </div>
-        
-        <div id="gameOver">
-            <h2 id="gameOverTitle">Congratulations!</h2>
-            <p id="gameOverMessage">You collected all items!</p>
-            <button onclick="restartGame()">Play Again</button>
-        </div>
+        <!-- Leaderboard -->
+
+        <button onclick="restartGame()">Play Again</button>
+      </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="game.js"></script>
-</body>
+
+    <!-- Leaderboard Display -->
+  </body>
 </html>
