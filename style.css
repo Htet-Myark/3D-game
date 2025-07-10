@@ -80,6 +80,7 @@ body {
     border-radius: 50%;
     position: relative;
     touch-action: none;
+    margin-bottom: 80px;
 }
 
 #joystickKnob {
@@ -101,7 +102,8 @@ body {
     }
     
     #instructions {
-        bottom: 160px;
+        display: none;
+        
     }
     
     #mobileInstructions {
