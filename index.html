@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple 3D Game</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="gameContainer">
+        <div id="ui">
+            <div>Score: <span id="score">0</span></div>
+            <div>Items Left: <span id="itemsLeft">10</span></div>
+            <div id="timer">Time: <span id="timeLeft">20</span>s</div>
+        </div>
+        
+        <div id="instructions">
+            Use WASD or Arrow Keys to move • Collect all the spinning cubes!
+        </div>
+        
+        <div id="gameOver">
+            <h2 id="gameOverTitle">Congratulations!</h2>
+            <p id="gameOverMessage">You collected all items!</p>
+            <button onclick="restartGame()">Play Again</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
