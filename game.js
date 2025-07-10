@@ -1,9 +1,5 @@
 // Game variables
-let scene,
-  camera,
-  renderer,
-  player,
-  collectibles = [];
+let scene, camera, renderer, player, collectibles = [];
 let keys = {};
 let score = 0;
 let gameWon = false;
@@ -13,11 +9,18 @@ let gameTimer;
 let startTime;
 let leaderboard = [];
 
+// Mobile controls
+let joystickActive = false;
+let joystickDirection = { x: 0, y: 0 };
+
 // Game constants
 const PLAYER_SPEED = 0.1;
 const WORLD_SIZE = 20;
 const NUM_COLLECTIBLES = 10;
 const GAME_TIME = 20;
+
+// Simple shared leaderboard using localStorage
+const LEADERBOARD_KEY = 'game_leaderboard_v1';
 
 // Initialize the game
 function init() {
@@ -29,31 +32,156 @@ function init() {
   createPlayer();
   createCollectibles();
   setupEventListeners();
+  setupMobileControls();
+  loadLeaderboard();
   startGameTimer();
   animate();
 }
 
+// Leaderboard functions
 function submitScore() {
   const name = document.getElementById("playerName").value.trim();
   if (!name) return;
 
-  leaderboard.push({ name, score });
-  leaderboard.sort((a, b) => b.score - a.score);
-  if (leaderboard.length > 10) leaderboard = leaderboard.slice(0, 10); // Top 10
+  const newEntry = { 
+    name: name, 
+    score: score, 
+    timestamp: Date.now(),
+    finalTime: GAME_TIME - timeLeft 
+  };
 
+  // Add to leaderboard
+  leaderboard.push(newEntry);
+  leaderboard.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    return a.finalTime - b.finalTime; // If same score, faster time wins
+  });
+  
+  // Keep top 10
+  if (leaderboard.length > 10) leaderboard = leaderboard.slice(0, 10);
+
+  // Save to localStorage (simulating shared storage)
+  saveLeaderboard();
+  
   updateLeaderboardUI();
   document.getElementById("nameInput").style.display = "none";
   document.getElementById("leaderboard").style.display = "block";
 }
 
+function saveLeaderboard() {
+  try {
+    const existingData = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || '[]');
+    const allEntries = [...existingData, ...leaderboard];
+    
+    // Remove duplicates and sort
+    const uniqueEntries = allEntries.filter((entry, index, self) => 
+      index === self.findIndex(e => e.name === entry.name && e.score === entry.score && e.timestamp === entry.timestamp)
+    );
+    
+    uniqueEntries.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.finalTime - b.finalTime;
+    });
+    
+    const topEntries = uniqueEntries.slice(0, 10);
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(topEntries));
+    leaderboard = topEntries;
+  } catch (e) {
+    console.log('Could not save leaderboard');
+  }
+}
+
+function loadLeaderboard() {
+  try {
+    const saved = localStorage.getItem(LEADERBOARD_KEY);
+    if (saved) {
+      leaderboard = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.log('Could not load leaderboard');
+    leaderboard = [];
+  }
+}
+
 function updateLeaderboardUI() {
   const list = document.getElementById("leaderboardList");
   list.innerHTML = "";
+  
+  if (leaderboard.length === 0) {
+    const noScores = document.createElement("li");
+    noScores.textContent = "No scores yet - be the first!";
+    noScores.className = "no-scores";
+    list.appendChild(noScores);
+    return;
+  }
+
   leaderboard.forEach((entry, index) => {
     const item = document.createElement("li");
-    item.textContent = `${entry.name} - ${entry.score}`;
+    const timeText = entry.finalTime ? ` (${entry.finalTime.toFixed(1)}s)` : '';
+    item.textContent = `${index + 1}. ${entry.name} - ${entry.score} points${timeText}`;
     list.appendChild(item);
   });
+}
+
+// Setup mobile controls
+function setupMobileControls() {
+  const joystick = document.getElementById('joystick');
+  const knob = document.getElementById('joystickKnob');
+  
+  function getDistance(touch, element) {
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    return {
+      x: touch.clientX - centerX,
+      y: touch.clientY - centerY
+    };
+  }
+
+  function updateJoystick(distance) {
+    const maxDistance = 40;
+    const length = Math.sqrt(distance.x * distance.x + distance.y * distance.y);
+    
+    if (length > maxDistance) {
+      distance.x = (distance.x / length) * maxDistance;
+      distance.y = (distance.y / length) * maxDistance;
+    }
+    
+    knob.style.transform = `translate(-50%, -50%) translate(${distance.x}px, ${distance.y}px)`;
+    
+    // Update direction for game movement
+    joystickDirection.x = distance.x / maxDistance;
+    joystickDirection.y = distance.y / maxDistance;
+  }
+
+  joystick.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    joystickActive = true;
+    const touch = e.touches[0];
+    const distance = getDistance(touch, joystick);
+    updateJoystick(distance);
+  });
+
+  joystick.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    if (!joystickActive) return;
+    const touch = e.touches[0];
+    const distance = getDistance(touch, joystick);
+    updateJoystick(distance);
+  });
+
+  joystick.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    joystickActive = false;
+    knob.style.transform = 'translate(-50%, -50%)';
+    joystickDirection.x = 0;
+    joystickDirection.y = 0;
+  });
+
+  // Prevent scrolling on mobile
+  document.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+  }, { passive: false });
 }
 
 // Create the 3D scene
@@ -98,10 +226,7 @@ function addLights() {
 
 // Create the ground
 function createGround() {
-  const groundGeometry = new THREE.PlaneGeometry(
-    WORLD_SIZE * 2,
-    WORLD_SIZE * 2
-  );
+  const groundGeometry = new THREE.PlaneGeometry(WORLD_SIZE * 2, WORLD_SIZE * 2);
   const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x444444 });
   const ground = new THREE.Mesh(groundGeometry, groundMaterial);
   ground.rotation.x = -Math.PI / 2;
@@ -166,6 +291,7 @@ function handleInput() {
 
   const moveVector = new THREE.Vector3();
 
+  // Keyboard controls
   if (keys["KeyW"] || keys["ArrowUp"]) {
     moveVector.z -= PLAYER_SPEED;
   }
@@ -179,17 +305,17 @@ function handleInput() {
     moveVector.x += PLAYER_SPEED;
   }
 
+  // Mobile joystick controls
+  if (joystickActive || Math.abs(joystickDirection.x) > 0.1 || Math.abs(joystickDirection.y) > 0.1) {
+    moveVector.x += joystickDirection.x * PLAYER_SPEED;
+    moveVector.z += joystickDirection.y * PLAYER_SPEED;
+  }
+
   player.position.add(moveVector);
 
   // Keep player within bounds
-  player.position.x = Math.max(
-    -WORLD_SIZE,
-    Math.min(WORLD_SIZE, player.position.x)
-  );
-  player.position.z = Math.max(
-    -WORLD_SIZE,
-    Math.min(WORLD_SIZE, player.position.z)
-  );
+  player.position.x = Math.max(-WORLD_SIZE, Math.min(WORLD_SIZE, player.position.x));
+  player.position.z = Math.max(-WORLD_SIZE, Math.min(WORLD_SIZE, player.position.z));
 
   // Update camera to follow player
   camera.position.x = player.position.x;
@@ -206,8 +332,7 @@ function updateCollectibles() {
 
     // Animate collectible
     collectible.rotation.y += 0.02;
-    collectible.position.y =
-      collectible.userData.originalY + Math.sin(time + i) * 0.2;
+    collectible.position.y = collectible.userData.originalY + Math.sin(time + i) * 0.2;
 
     // Check collision with player
     const distance = player.position.distanceTo(collectible.position);
@@ -221,10 +346,8 @@ function updateCollectibles() {
       if (collectibles.length === 0) {
         gameWon = true;
         clearInterval(gameTimer);
-        document.getElementById("gameOverTitle").textContent =
-          "Congratulations!";
-        document.getElementById("gameOverMessage").textContent =
-          "You collected all items in time!";
+        document.getElementById("gameOverTitle").textContent = "Congratulations!";
+        document.getElementById("gameOverMessage").textContent = "You collected all items in time!";
         document.getElementById("gameOver").style.display = "block";
         document.getElementById("nameInput").style.display = "block";
       }
@@ -247,14 +370,6 @@ function startGameTimer() {
 
 // Update the timer
 function updateTimer() {
-    if (timeLeft <= 0) {
-    gameOver = true;
-    clearInterval(gameTimer);
-    document.getElementById('gameOverTitle').textContent = 'Time\'s Up!';
-    document.getElementById('gameOverMessage').textContent = `You collected ${score} out of ${NUM_COLLECTIBLES} items.`;
-    document.getElementById('gameOver').style.display = 'block';
-    document.getElementById('nameInput').style.display = 'block'; // ← ADD THIS
-}
   if (gameWon || gameOver) return;
 
   const elapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -277,10 +392,9 @@ function updateTimer() {
     gameOver = true;
     clearInterval(gameTimer);
     document.getElementById("gameOverTitle").textContent = "Time's Up!";
-    document.getElementById(
-      "gameOverMessage"
-    ).textContent = `You collected ${score} out of ${NUM_COLLECTIBLES} items.`;
+    document.getElementById("gameOverMessage").textContent = `You collected ${score} out of ${NUM_COLLECTIBLES} items.`;
     document.getElementById("gameOver").style.display = "block";
+    document.getElementById("nameInput").style.display = "block";
   }
 }
 
@@ -300,6 +414,11 @@ function restartGame() {
   timeLeft = GAME_TIME;
   clearInterval(gameTimer);
   document.getElementById("gameOver").style.display = "none";
+  document.getElementById("nameInput").style.display = "block";
+  document.getElementById("leaderboard").style.display = "none";
+
+  // Reset input field
+  document.getElementById("playerName").value = "";
 
   // Remove existing collectibles
   collectibles.forEach((collectible) => scene.remove(collectible));

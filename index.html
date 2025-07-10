@@ -27,18 +27,18 @@
 
       <div id="gameOver">
         <h2 id="gameOverTitle">Congratulations!</h2>
-
         <p id="gameOverMessage">You collected all items!</p>
+        
         <div id="nameInput">
-          <input type="text" id="playerName" placeholder="Your Name" />
+          <input type="text" id="playerName" placeholder="Your Name" maxlength="20" />
           <button onclick="submitScore()">Submit</button>
         </div>
 
         <div id="leaderboard" style="display: none">
-          <h3>Leaderboard</h3>
+          <h3>🏆 Global Leaderboard</h3>
+          <div id="loadingLeaderboard" style="display: none">Loading...</div>
           <ol id="leaderboardList"></ol>
         </div>
-        <!-- Leaderboard -->
 
         <button onclick="restartGame()">Play Again</button>
       </div>
@@ -46,7 +46,5 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="game.js"></script>
-
-    <!-- Leaderboard Display -->
   </body>
 </html>

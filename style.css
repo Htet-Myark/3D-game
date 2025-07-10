@@ -46,6 +46,12 @@ body {
     font-size: 24px;
     z-index: 200;
     display: none;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 30px;
+    border-radius: 10px;
+    max-width: 90vw;
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
 #gameOver button {
@@ -63,12 +69,37 @@ body {
     background: #45a049;
 }
 
+#leaderboard {
+    margin-top: 20px;
+    text-align: left;
+}
 
+#leaderboardList {
+    list-style: none;
+    padding: 0;
+    margin: 10px 0;
+}
 
+#leaderboardList li {
+    padding: 5px 0;
+    border-bottom: 1px solid #333;
+    color: #fff;
+}
 
+#leaderboardList li:first-child {
+    color: #ffd700;
+    font-weight: bold;
+}
 
+#leaderboardList li:nth-child(2) {
+    color: #c0c0c0;
+    font-weight: bold;
+}
 
-
+#leaderboardList li:nth-child(3) {
+    color: #cd7f32;
+    font-weight: bold;
+}
 
 .no-scores {
     text-align: center;
@@ -128,7 +159,6 @@ body {
     display: none;
 }
 
-
 #nameInput input {
     padding: 8px;
     font-size: 16px;
@@ -148,4 +178,9 @@ body {
 
 #nameInput button:hover {
     background: #1976D2;
+}
+
+#loadingLeaderboard {
+    color: #999;
+    font-style: italic;
 }
