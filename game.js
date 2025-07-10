@@ -8,6 +8,12 @@ let timeLeft = 20;
 let gameTimer;
 let startTime;
 
+// Mobile touch controls
+let joystickActive = false;
+let joystickCenter = { x: 0, y: 0 };
+let joystickInput = { x: 0, y: 0 };
+let touchStartPos = { x: 0, y: 0 };
+
 // Game constants
 const PLAYER_SPEED = 0.1;
 const WORLD_SIZE = 20;
@@ -109,6 +115,7 @@ function createCollectibles() {
 
 // Setup event listeners
 function setupEventListeners() {
+    // Keyboard events
     document.addEventListener('keydown', (e) => {
         keys[e.code] = true;
     });
@@ -117,10 +124,84 @@ function setupEventListeners() {
         keys[e.code] = false;
     });
     
+    // Mobile touch events
+    setupMobileControls();
+    
+    // Window resize
     window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+}
+
+// Setup mobile touch controls
+function setupMobileControls() {
+    const joystick = document.getElementById('joystick');
+    const joystickKnob = document.getElementById('joystickKnob');
+    
+    if (!joystick) return;
+    
+    // Get joystick center position
+    function updateJoystickCenter() {
+        const rect = joystick.getBoundingClientRect();
+        joystickCenter.x = rect.left + rect.width / 2;
+        joystickCenter.y = rect.top + rect.height / 2;
+    }
+    
+    // Touch start
+    joystick.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        joystickActive = true;
+        updateJoystickCenter();
+        
+        const touch = e.touches[0];
+        touchStartPos.x = touch.clientX;
+        touchStartPos.y = touch.clientY;
+    });
+    
+    // Touch move
+    joystick.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!joystickActive) return;
+        
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - joystickCenter.x;
+        const deltaY = touch.clientY - joystickCenter.y;
+        
+        // Limit joystick movement to circle
+        const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+        const maxDistance = 40; // Half of joystick radius
+        
+        if (distance > maxDistance) {
+            const angle = Math.atan2(deltaY, deltaX);
+            joystickInput.x = Math.cos(angle) * maxDistance;
+            joystickInput.y = Math.sin(angle) * maxDistance;
+        } else {
+            joystickInput.x = deltaX;
+            joystickInput.y = deltaY;
+        }
+        
+        // Update knob position
+        joystickKnob.style.transform = `translate(${joystickInput.x - 20}px, ${joystickInput.y - 20}px)`;
+        
+        // Normalize input (-1 to 1)
+        joystickInput.x = joystickInput.x / maxDistance;
+        joystickInput.y = joystickInput.y / maxDistance;
+    });
+    
+    // Touch end
+    joystick.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        joystickActive = false;
+        joystickInput.x = 0;
+        joystickInput.y = 0;
+        joystickKnob.style.transform = 'translate(-50%, -50%)';
+    });
+    
+    // Prevent context menu on long press
+    joystick.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
     });
 }
 
@@ -130,6 +211,7 @@ function handleInput() {
     
     const moveVector = new THREE.Vector3();
     
+    // Keyboard input
     if (keys['KeyW'] || keys['ArrowUp']) {
         moveVector.z -= PLAYER_SPEED;
     }
@@ -143,6 +225,13 @@ function handleInput() {
         moveVector.x += PLAYER_SPEED;
     }
     
+    // Mobile joystick input
+    if (joystickActive || (joystickInput.x !== 0 || joystickInput.y !== 0)) {
+        moveVector.x += joystickInput.x * PLAYER_SPEED;
+        moveVector.z += joystickInput.y * PLAYER_SPEED;
+    }
+    
+    // Apply movement
     player.position.add(moveVector);
     
     // Keep player within bounds
